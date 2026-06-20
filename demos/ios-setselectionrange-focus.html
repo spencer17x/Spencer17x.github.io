@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>spencer17x</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="spencer17x"><meta name="msapplication-TileImage" content="/img/favicon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="spencer17x"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="iOS Safari 多 input setSelectionRange 焦点复现 在 iPhone 真机 Safari 上测试：先点进任意输入框，再触发下面的批量操作，观察焦点、键盘和日志变化。  快速触发：仅批量 setSelectionRange 快速触发：只处理 activeElement active: - last: - 测试输入框 input A input B input C in"><meta property="og:type" content="blog"><meta property="og:title" content="spencer17x"><meta property="og:url" content="https://spencer17x.github.io/demos/ios-setselectionrange-focus.html"><meta property="og:site_name" content="spencer17x"><meta property="og:description" content="iOS Safari 多 input setSelectionRange 焦点复现 在 iPhone 真机 Safari 上测试：先点进任意输入框，再触发下面的批量操作，观察焦点、键盘和日志变化。  快速触发：仅批量 setSelectionRange 快速触发：只处理 activeElement active: - last: - 测试输入框 input A input B input C in"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://spencer17x.github.io/img/og_image.png"><meta property="article:published_time" content="2026-06-20T02:19:48.090Z"><meta property="article:modified_time" content="2026-06-20T02:19:48.090Z"><meta property="article:author" content="spencer17x"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://spencer17x.github.io/demos/ios-setselectionrange-focus.html"},"headline":"spencer17x","image":["https://spencer17x.github.io/img/og_image.png"],"datePublished":"2026-06-20T02:19:48.090Z","dateModified":"2026-06-20T02:19:48.090Z","author":{"@type":"Person","name":"spencer17x"},"publisher":{"@type":"Organization","name":"spencer17x","logo":{"@type":"ImageObject","url":"https://spencer17x.github.io/img/logo.svg"}},"description":"iOS Safari 多 input setSelectionRange 焦点复现 在 iPhone 真机 Safari 上测试：先点进任意输入框，再触发下面的批量操作，观察焦点、键盘和日志变化。  快速触发：仅批量 setSelectionRange 快速触发：只处理 activeElement active: - last: - 测试输入框 input A input B input C in"}</script><link rel="canonical" href="https://spencer17x.github.io/demos/ios-setselectionrange-focus.html"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script><!--!--><!--!--><meta name="generator" content="Hexo 6.0.0"></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="spencer17x" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" target="_blank" rel="noopener" href="https://github.com/Spencer17x">关于我</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/Spencer17x"><i class="fab fa-github"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="content"><!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>iOS Safari setSelectionRange focus demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7dde5;
+      --accent: #0b6bcb;
+      --danger: #b42318;
+      --ok: #137333;
+      --shadow: 0 10px 30px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      padding: 18px 14px 36px;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 6px 0 8px;
+      font-size: 24px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    section {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .quick-panel {
+      position: sticky;
+      top: 8px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid rgba(11, 107, 203, 0.28);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 8px 22px rgba(23, 32, 42, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .quick-status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .quick-status span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .field-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid #b9c2cf;
+      border-radius: 7px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(11, 107, 203, 0.16);
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid #aeb8c5;
+      border-radius: 7px;
+      padding: 9px 11px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    button.safe {
+      border-color: rgba(19, 115, 51, 0.45);
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    button.danger {
+      border-color: rgba(180, 35, 24, 0.42);
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      min-height: 58px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fafbfc;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .metric span {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    pre {
+      overflow: auto;
+      min-height: 190px;
+      max-height: 330px;
+      margin: 10px 0 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #111827;
+      color: #d1fae5;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+
+    .note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (min-width: 680px) {
+      body {
+        padding-top: 28px;
+      }
+
+      .button-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-status {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>iOS Safari 多 input setSelectionRange 焦点复现</h1>
+    <p>在 iPhone 真机 Safari 上测试：先点进任意输入框，再触发下面的批量操作，观察焦点、键盘和日志变化。</p>
+
+    <div class="quick-panel" aria-label="快速触发区">
+      <button class="danger" type="button" data-action="batch-only">快速触发：仅批量 setSelectionRange</button>
+      <button class="safe" type="button" data-action="active-only">快速触发：只处理 activeElement</button>
+      <div class="quick-status">
+        <span>active: <strong id="quick-active">-</strong></span>
+        <span>last: <strong id="quick-last">-</strong></span>
+      </div>
+    </div>
+
+    <section aria-labelledby="fields-title">
+      <h2 id="fields-title">测试输入框</h2>
+      <div class="field-list">
+        <label>
+          input A
+          <input id="field-a" data-name="input A" value="A-13800138000" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <label>
+          input B
+          <input id="field-b" data-name="input B" value="B-24681012" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <label>
+          input C
+          <input id="field-c" data-name="input C" value="C-hello-ios-safari" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <label>
+          input D
+          <input id="field-d" data-name="input D" value="D-last-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </label>
+      </div>
+    </section>
+
+    <section aria-labelledby="actions-title">
+      <h2 id="actions-title">触发操作</h2>
+      <div class="button-grid">
+        <button class="primary" type="button" data-action="auto-batch">自动复现：聚焦 A 后批量 setSelectionRange</button>
+        <button type="button" data-action="batch-only">仅批量 setSelectionRange，不主动 focus</button>
+        <button type="button" data-action="batch-with-focus">批量 focus + setSelectionRange</button>
+        <button type="button" data-action="raf-batch">requestAnimationFrame 后批量 setSelectionRange</button>
+        <button class="safe" type="button" data-action="active-only">安全写法：只处理当前 activeElement</button>
+        <button class="danger" type="button" data-action="blur">清空焦点</button>
+      </div>
+      <p class="note">如果触发“仅批量 setSelectionRange”后焦点跳到最后一个输入框，说明当前 iOS Safari 环境能复现这个问题。</p>
+    </section>
+
+    <section aria-labelledby="status-title">
+      <h2 id="status-title">实时状态</h2>
+      <div class="status-grid">
+        <div class="metric">
+          <strong>activeElement</strong>
+          <span id="active-element">-</span>
+        </div>
+        <div class="metric">
+          <strong>lastFocusedInput</strong>
+          <span id="last-focused">-</span>
+        </div>
+        <div class="metric">
+          <strong>selection</strong>
+          <span id="selection">-</span>
+        </div>
+        <div class="metric">
+          <strong>visualViewport</strong>
+          <span id="viewport">-</span>
+        </div>
+      </div>
+      <pre id="log" aria-live="polite"></pre>
+    </section>
+  </main>
+
+  <script>
+    const inputs = Array.from(document.querySelectorAll('input'));
+    const logEl = document.querySelector('#log');
+    const activeEl = document.querySelector('#active-element');
+    const lastFocusedEl = document.querySelector('#last-focused');
+    const selectionEl = document.querySelector('#selection');
+    const viewportEl = document.querySelector('#viewport');
+    const quickActiveEl = document.querySelector('#quick-active');
+    const quickLastEl = document.querySelector('#quick-last');
+    let lastFocusedInput = null;
+    let actionLock = false;
+
+    function nameOf(element) {
+      if (!element) return '-';
+      if (element.dataset && element.dataset.name) return element.dataset.name;
+      if (element.id) return element.id;
+      return element.tagName ? element.tagName.toLowerCase() : String(element);
+    }
+
+    function now() {
+      const date = new Date();
+      return [
+        String(date.getHours()).padStart(2, '0'),
+        String(date.getMinutes()).padStart(2, '0'),
+        String(date.getSeconds()).padStart(2, '0'),
+        String(date.getMilliseconds()).padStart(3, '0')
+      ].join(':');
+    }
+
+    function writeLog(message) {
+      logEl.textContent = `${now()}  ${message}\n${logEl.textContent}`;
+    }
+
+    function getSelectionText(element) {
+      if (!element || typeof element.selectionStart !== 'number') return '-';
+      return `${nameOf(element)} [${element.selectionStart}, ${element.selectionEnd}]`;
+    }
+
+    function updateStatus() {
+      const active = document.activeElement;
+      activeEl.textContent = nameOf(active);
+      lastFocusedEl.textContent = nameOf(lastFocusedInput);
+      quickActiveEl.textContent = nameOf(active);
+      quickLastEl.textContent = nameOf(lastFocusedInput);
+      selectionEl.textContent = getSelectionText(active);
+
+      if (window.visualViewport) {
+        viewportEl.textContent = `${Math.round(window.visualViewport.width)} x ${Math.round(window.visualViewport.height)}`;
+      } else {
+        viewportEl.textContent = `${window.innerWidth} x ${window.innerHeight}`;
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => window.setTimeout(resolve, ms));
+    }
+
+    function setRange(input, label) {
+      try {
+        const start = Math.min(2, input.value.length);
+        const end = input.value.length;
+        input.setSelectionRange(start, end);
+        writeLog(`${label}: ${nameOf(input)} setSelectionRange(${start}, ${end}); active=${nameOf(document.activeElement)}`);
+      } catch (error) {
+        writeLog(`${label}: ${nameOf(input)} failed: ${error.name} ${error.message}`);
+      }
+      updateStatus();
+    }
+
+    function batchSetSelection(label) {
+      writeLog(`${label}: start; active=${nameOf(document.activeElement)}`);
+      inputs.forEach(input => setRange(input, label));
+      writeLog(`${label}: end; active=${nameOf(document.activeElement)}`);
+      updateStatus();
+    }
+
+    async function autoBatch() {
+      writeLog('auto: focus input A');
+      inputs[0].focus();
+      updateStatus();
+      await sleep(360);
+      batchSetSelection('auto batch');
+    }
+
+    function batchWithFocus() {
+      writeLog(`batch focus: start; active=${nameOf(document.activeElement)}`);
+      inputs.forEach(input => {
+        input.focus();
+        setRange(input, 'batch focus');
+      });
+      writeLog(`batch focus: end; active=${nameOf(document.activeElement)}`);
+      updateStatus();
+    }
+
+    function activeOnly() {
+      const active = document.activeElement;
+      if (!inputs.includes(active)) {
+        writeLog(`active only: skip; active=${nameOf(active)} is not a test input`);
+        updateStatus();
+        return;
+      }
+
+      setRange(active, 'active only');
+    }
+
+    async function handleAction(action) {
+      if (actionLock) return;
+      actionLock = true;
+
+      try {
+        if (action === 'auto-batch') {
+          await autoBatch();
+        } else if (action === 'batch-only') {
+          batchSetSelection('batch only');
+        } else if (action === 'batch-with-focus') {
+          batchWithFocus();
+        } else if (action === 'raf-batch') {
+          writeLog('raf batch: scheduled');
+          window.requestAnimationFrame(() => batchSetSelection('raf batch'));
+        } else if (action === 'active-only') {
+          activeOnly();
+        } else if (action === 'blur') {
+          if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+          }
+          writeLog('blur: document.activeElement.blur()');
+          updateStatus();
+        }
+      } finally {
+        window.setTimeout(() => {
+          actionLock = false;
+        }, 80);
+      }
+    }
+
+    document.addEventListener('focusin', event => {
+      if (inputs.includes(event.target)) {
+        lastFocusedInput = event.target;
+      }
+      writeLog(`focusin: ${nameOf(event.target)}; active=${nameOf(document.activeElement)}`);
+      updateStatus();
+    });
+
+    document.addEventListener('focusout', event => {
+      writeLog(`focusout: ${nameOf(event.target)}; active=${nameOf(document.activeElement)}`);
+      window.setTimeout(updateStatus, 0);
+    });
+
+    document.addEventListener('selectionchange', updateStatus);
+
+    document.querySelectorAll('[data-action]').forEach(button => {
+      button.addEventListener('click', () => handleAction(button.dataset.action));
+    });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateStatus);
+      window.visualViewport.addEventListener('scroll', updateStatus);
+    }
+
+    updateStatus();
+    writeLog(`ready: ${navigator.userAgent}`);
+
+    const autorun = new URLSearchParams(window.location.search).get('autorun');
+    if (autorun === 'batch-only') {
+      writeLog('autorun: batch-only scheduled');
+      window.setTimeout(() => batchSetSelection('autorun batch only'), 900);
+    }
+  </script>
+</body>
+</html>
+</div><div class="article-licensing box"><div class="licensing-title"><p><a href="https://spencer17x.github.io/demos/ios-setselectionrange-focus.html">https://spencer17x.github.io/demos/ios-setselectionrange-focus.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>spencer17x</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2026-06-20</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-06-20</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a><a class="icons" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="icon fab fa-creative-commons-by"></i></a><a class="icons" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="icon fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3><div class="buttons is-centered"><a class="button donate" data-type="wechat"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>微信</span><span class="qrcode"><img src="/img/wechat.jpeg" alt="微信"></span></a></div></div></div><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: "81e39a5fbf2f204d9d3ceaf90eafe093",
+            repo: "Spencer17x.github.io",
+            owner: "Spencer17x",
+            clientID: "692de4580649a9be7d1e",
+            clientSecret: "230df4e13b333d9a2033ca3767151297475939b6",
+            admin: ["Spencer17x"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: "last",
+            
+            
+            enableHotKey: true,
+            language: "zh-CN",
+        })
+        gitalk.render('comment-container')</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="/img/avatar.jpeg" alt="spencer17x"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">spencer17x</p><p class="is-size-6 is-block">Front-end</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Hangzhou</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">22</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">0</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">7</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/Spencer17x" target="_blank" rel="noopener">关注我</a></div><div class="level is-mobile is-multiline"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/Spencer17x"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><!--!--><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://hexo.io" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">Hexo</span></span><span class="level-right"><span class="level-item tag">hexo.io</span></span></a></li><li><a class="level is-mobile" href="https://bulma.io" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">Bulma</span></span><span class="level-right"><span class="level-item tag">bulma.io</span></span></a></li></ul></div></div></div><!--!--><div class="card widget" data-type="recent-posts"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><div class="media-content"><p class="date"><time dateTime="2026-06-20T05:45:00.000Z">2026-06-20</time></p><p class="title"><a href="/2026/06/20/Excel-%E5%B0%8F%E6%95%B0%E8%AE%A1%E7%AE%97%E7%B2%BE%E5%BA%A6%E9%97%AE%E9%A2%98/">Excel 小数计算精度问题</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2026-06-20T04:58:00.000Z">2026-06-20</time></p><p class="title"><a href="/2026/06/20/iOS-Safari-%E5%A4%9A%E4%B8%AA-input-%E8%B0%83%E7%94%A8-setSelectionRange-%E5%AF%BC%E8%87%B4%E7%84%A6%E7%82%B9%E6%8A%A2%E5%8D%A0%E7%9A%84%E9%97%AE%E9%A2%98/">iOS Safari 多个 input 调用 setSelectionRange 导致焦点抢占的问题</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2026-02-28T07:00:16.000Z">2026-02-28</time></p><p class="title"><a href="/2026/02/28/%F0%9F%A6%9E-Mac-%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2-OpenClaw-%E5%85%A8%E9%93%BE%E8%B7%AF%E6%8E%92%E9%9A%9C%E5%AE%9E%E5%BD%95/">🦞 Mac 本地部署 OpenClaw 全链路排障实录</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2026-02-28T06:57:15.000Z">2026-02-28</time></p><p class="title"><a href="/2026/02/28/Mac-%E5%BE%AE%E4%BF%A14-0%E5%A4%9A%E5%BC%80/">Mac 微信4.0多开</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2024-03-11T02:23:22.000Z">2024-03-11</time></p><p class="title"><a href="/2024/03/11/%E5%88%A9%E7%94%A8rsshub-rsstt%E5%AE%9E%E7%8E%B0%E8%AE%A2%E9%98%85%E6%8E%A8%E7%89%B9%E7%94%A8%E6%88%B7%E5%B9%B6%E6%8E%A8%E9%80%81%E6%B6%88%E6%81%AF%E5%88%B0telegram/">利用rsshub+rsstt实现订阅推特用户并推送消息到telegram</a></p></div></article></div></div><div class="card widget" data-type="archives"><div class="card-content"><div class="menu"><h3 class="menu-label">归档</h3><ul class="menu-list"><li><a class="level is-mobile" href="/archives/2026/06/"><span class="level-start"><span class="level-item">六月 2026</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/archives/2026/02/"><span class="level-start"><span class="level-item">二月 2026</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/archives/2024/03/"><span class="level-start"><span class="level-item">三月 2024</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/archives/2023/11/"><span class="level-start"><span class="level-item">十一月 2023</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/archives/2023/10/"><span class="level-start"><span class="level-item">十月 2023</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/archives/2022/02/"><span class="level-start"><span class="level-item">二月 2022</span></span><span class="level-end"><span class="level-item tag">6</span></span></a></li><li><a class="level is-mobile" href="/archives/2021/12/"><span class="level-start"><span class="level-item">十二月 2021</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/archives/2021/10/"><span class="level-start"><span class="level-item">十月 2021</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/archives/2021/09/"><span class="level-start"><span class="level-item">九月 2021</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></div></div></div><div class="card widget" data-type="tags"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/AI/"><span class="tag">AI</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Front-end/"><span class="tag">Front-end</span><span class="tag">12</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Go/"><span class="tag">Go</span><span class="tag">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Mac/"><span class="tag">Mac</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Nginx/"><span class="tag">Nginx</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Others/"><span class="tag">Others</span><span class="tag">3</span></a></div><div class="control"><a class="tags has-addons" href="/tags/WebRTC/"><span class="tag">WebRTC</span><span class="tag">2</span></a></div></div></div></div></div><div class="card widget" data-type="subscribe-email"><div class="card-content"><div class="menu"><h3 class="menu-label">订阅更新</h3><form action="https://feedburner.google.com/fb/a/mailverify" method="post" target="popupwindow" onsubmit="window.open(&#039;https://feedburner.google.com/fb/a/mailverify?uri=&#039;,&#039;popupwindow&#039;,&#039;scrollbars=yes,width=550,height=520&#039;);return true"><input type="hidden" value="" name="uri"><input type="hidden" name="loc" value="en_US"><div class="field has-addons"><div class="control has-icons-left is-expanded"><input class="input" name="email" type="email" placeholder="Email"><span class="icon is-small is-left"><i class="fas fa-envelope"></i></span></div><div class="control"><input class="button" type="submit" value="订阅"></div></div></form></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="spencer17x" height="28"></a><p class="is-size-7"><span>&copy; 2026 spencer17x</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/Spencer17x"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.js" defer></script><script>window.addEventListener("load", () => {
+      window.cookieconsent.initialise({
+        type: "info",
+        theme: "edgeless",
+        static: false,
+        position: "bottom-left",
+        content: {
+          message: "此网站使用Cookie来改善您的体验。",
+          dismiss: "知道了！",
+          allow: "允许使用Cookie",
+          deny: "拒绝",
+          link: "了解更多",
+          policy: "Cookie政策",
+          href: "https://www.cookiesandyou.com/",
+        },
+        palette: {
+          popup: {
+            background: "#edeff5",
+            text: "#838391"
+          },
+          button: {
+            background: "#4b81e8"
+          },
+        },
+      });
+    });</script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
